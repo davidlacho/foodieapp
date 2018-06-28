@@ -12,5 +12,8 @@
     "recipes"
   ],
   "author": "David Lacho",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.1.2"
+  }
 }
