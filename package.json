@@ -1,0 +1,16 @@
+{
+  "name": "foodie-app",
+  "version": "1.0.0",
+  "description": "An app for showing you the best recipes ever",
+  "main": "js/app.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "foodie",
+    "app",
+    "recipes"
+  ],
+  "author": "David Lacho",
+  "license": "ISC"
+}
