@@ -36,6 +36,7 @@ function food2fork(ingredient) {
     .then((data) => {
       console.log(data);
       const recipes = data.recipes;
+      console.log(recipes);
       for (let recipe in recipes) {
         console.log(recipes[recipe]);
         console.log(recipes[recipe].title);
