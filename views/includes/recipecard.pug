@@ -1,0 +1,10 @@
+
+block content
+  .col-sm-4.mt-2.mb-2
+    .card
+      img.card-img-top(src=`${recipe.image_url}` alt=`${recipe.title}`)
+      .card-body
+        h5.card-title #{recipe.title}
+        p.card-text
+          | This is ranked #{recipe.social_rank} out of 100.
+        a.btn.btn-primary(href='#') Get Recipe
