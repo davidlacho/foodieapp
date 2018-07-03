@@ -1,9 +1,12 @@
 include includes/header
-.container
-  include includes/searcharea
-  if recipes
-    include includes/results
-    .row
-        each recipe in recipes
-          include includes/recipecard
+  include includes/recipemodal
+  if message 
+    include includes/message
+  else 
+    include includes/searcharea
+    if recipes
+      include includes/results
+      .row
+          each recipe in recipes
+            include includes/recipecard
   include includes/footer
