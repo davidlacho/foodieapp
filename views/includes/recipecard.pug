@@ -7,8 +7,6 @@ block content
         h5.card-title #{recipe.title}
         p.card-text
           | This is ranked #{recipe.social_rank} out of 100.
-        a.btn.btn-primary(href=`?recipe=${recipe.recipe_id}`) Get Recipe
-        // Button trigger modal
-        button.btn.btn-primary(type="button", data-toggle="modal", data-target="#recipeModal" id=`${recipe.recipe_id}`)
+        button.btn.btn-primary.get-recipe-button(type="button", data-toggle="modal", data-target="#recipeModal" id=`${recipe.recipe_id}`)
           | Get Recipe
         

@@ -3,7 +3,7 @@
   .modal-dialog(role="document")
     .modal-content
       .modal-header
-        h5#recipeModalLabel.modal-title Modal title
+        h5#recipeModalLabel.modal-title Loading...
         |         
         button.close(type="button", data-dismiss="modal", aria-label="Close")
           span(aria-hidden="true") ×
@@ -12,6 +12,4 @@
         | ...
       |       
       .modal-footer
-        button.btn.btn-secondary(type="button", data-dismiss="modal") Close
-        |         
-        button.btn.btn-primary(type="button") Save changes
+        button.btn.btn-secondary.close-modal-button(type="button", data-dismiss="modal") Close

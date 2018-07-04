@@ -32,14 +32,12 @@ router.get('/', (req, res, next) => {
   let { recipe } = req.query;
 
   if (recipe != undefined) {
+    console.log(recipe);
     url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recipe}`;
-    console.log(url);
     fetchData(url)
       .then((data) => {
-        recipeIngredients = data;
-        console.log(data);
-      })
-    res.render('template');
+        res.send(data);
+      });
   } else if (ingredient != undefined) {
     let recipes = [];
     const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredient}`;
