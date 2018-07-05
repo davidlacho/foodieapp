@@ -14,7 +14,9 @@
   "author": "David Lacho",
   "license": "ISC",
   "dependencies": {
+    "cookie-parser": "^1.4.3",
     "express": "^4.16.3",
+    "mongoose": "^5.2.1",
     "node-fetch": "^2.1.2",
     "pug": "^2.0.3"
   }

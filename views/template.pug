@@ -1,10 +1,10 @@
 include includes/header
-  include includes/recipemodal
   if message 
     include includes/message
   else 
     include includes/searcharea
     if recipes
+      include includes/recipemodal
       include includes/results
       .row
           each recipe in recipes
