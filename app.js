@@ -22,7 +22,7 @@ db.on('error', console.error.bind(console, 'connection error: '));
 
 // any request that makes it this far will run this function:
 app.use((req, res, next) => {
-  const err = new Error('Not found');
+  const err = new Error('Page not found.');
   err.status = 404;
   next(err);
 });
@@ -32,6 +32,6 @@ app.use((err, req, res, next) =>{
   res.locals.error = err;
   res.status(err.status);
   res.render('template', {
-    message: err
+    message: `${err.status} ${err}`
   });
 });

@@ -1,11 +1,9 @@
 const fetch = require('node-fetch');
 
 function fetchData(url) {
-
   return fetch(url)
     .then(res => checkStatus(res))
-    .then(res => res.json())
-    .catch(error => console.log('Looks like there was a problem: ', error));
+    .then(res => res.json());
 }
 
 function checkStatus(res) {
@@ -16,4 +14,4 @@ function checkStatus(res) {
   }
 }
 
-module.exports = fetchData; 
+module.exports = fetchData;

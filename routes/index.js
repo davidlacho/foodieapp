@@ -23,22 +23,24 @@ function renderRecipes(res, data) {
 
 router.get('/', (req, res, next) => {
 
+  // Query Strings:
   let {
     ingredient
   } = req.query;
+
   let {
     recipe
   } = req.query;
 
   // Check if query string searching for recipe.
   if (recipe != undefined) {
+    recipe = recipe.toLowerCase(recipe);
     recipeResults.find({
       recipeID: recipe
     }, function(err, docs) {
       // if recipe results do not exists in the db, create entry in db and send data.
       if (docs.length === 0) {
         url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recipe}`;
-        console.log('performing GET: ' + url);
         fetchData(url)
           .then((data) => {
             const recipeSavedResults = {
@@ -47,6 +49,14 @@ router.get('/', (req, res, next) => {
             };
             recipeResults.create(recipeSavedResults);
             res.send(data);
+          })
+          .catch((err) => {
+            const error = new Error("Something went wrong on our end.");
+            error.status = 500;
+            // Print a more detailed error to the server console:
+            console.error(`\nERROR OCCURED: ${err}`)
+            // Push this error to be handled in app.js
+            next(error);
           });
       } else {
         // if recipe results exists in db, send data from db.
@@ -55,35 +65,49 @@ router.get('/', (req, res, next) => {
     });
     // Check if query string searching for ingredient
   } else if (ingredient != undefined) {
-    searchResults.find({
-      ingredientName: ingredient
-    }, function(err, docs) {
-      // if ingredient does not exist in db, create entry in db and send data.
-      if (docs.length === 0) {
-        let recipes = [];
-        const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredient}`;
-        console.log('performing GET: ' + url);
-        fetchData(url)
-          .then((data) => {
-            recipes = data;
-            recipes.recipes.forEach((recipe) => {
-              recipe.social_rank = Math.round(recipe.social_rank);
+    if (ingredient.length === 0) {
+      res.redirect('/')
+    } else {
+      ingredient = ingredient.toLowerCase(ingredient);
+      searchResults.find({
+        ingredientName: ingredient
+      }, function(err, docs) {
+        // if ingredient does not exist in db, create entry in db and send data.
+        if (docs.length === 0) {
+          let recipes = [];
+          const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredient}`;
+          fetchData(url)
+            .then((data) => {
+              recipes = data;
+              recipes.recipes.forEach((recipe) => {
+                recipe.social_rank = Math.round(recipe.social_rank);
+              });
+              const savedResults = {
+                ingredientName: ingredient,
+                results: recipes
+              };
+              searchResults.create(savedResults);
+              renderRecipes(res, recipes);
+            })
+            .catch((err) => {
+              const error = new Error("Whoops! Something went wrong on our end.");
+              error.status = 500;
+              // Print a more detailed error to the server console:
+              console.error(`\nERROR OCCURED: ${err}`)
+              // Push this error to be handled in app.js
+              next(error);
             });
-            const savedResults = {
-              ingredientName: ingredient,
-              results: recipes
-            };
-            searchResults.create(savedResults);
-            renderRecipes(res, recipes);
-          });
-      } else {
-        // if ignredient results exists in db, send data from db.
-        renderRecipes(res, docs[0].results);;
-      }
-    });
+        } else {
+          // if ignredient results exists in db, send data from db.
+          renderRecipes(res, docs[0].results);;
+        }
+      });
+    }
+    // If no query strings, render home page
   } else {
     res.render('template');
   }
+
 }); // END .get('/')
 
 module.exports = router;
