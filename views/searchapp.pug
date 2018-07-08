@@ -1,0 +1,10 @@
+extends template.pug
+
+block content 
+    include includes/searcharea
+    if recipes
+      include includes/recipemodal
+      include includes/results
+      .row
+          each recipe in recipes
+            include includes/recipecard

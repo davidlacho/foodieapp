@@ -2,6 +2,11 @@ const express = require('express');
 const app = express();
 const router = require('./routes/index.js');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+// parse incoming requests
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
 
 const port = 3000;
 app.listen(port, ()=> {

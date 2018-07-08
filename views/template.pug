@@ -1,12 +1,5 @@
 include includes/header
   if message 
     include includes/message
-  else 
-    include includes/searcharea
-    if recipes
-      include includes/recipemodal
-      include includes/results
-      .row
-          each recipe in recipes
-            include includes/recipecard
+  block content
   include includes/footer

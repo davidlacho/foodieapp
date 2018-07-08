@@ -16,8 +16,8 @@ $(function() {
   });
 
   $('body').on('click', '.close-modal-button', function() {
-    $(".modal-title").html("Loading...");
-    $(".modal-body").html("...");
+    $(".modal-title").html("");
+    $(".modal-body").html("");
   })
 });
 // End .ready();
