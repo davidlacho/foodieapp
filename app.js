@@ -3,19 +3,15 @@ const app = express();
 const router = require('./routes/index.js');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-// parse incoming requests
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+const session = require('express-session');
+const mongoStore = require('connect-mongo')(session);
+const config = require('./js/config.js');
 
 
 const port = 3000;
-app.listen(port, ()=> {
+app.listen(port, () => {
   console.log(`Express running on port ${port}.`);
 });
-
-app.set('view engine', 'pug');
-app.use(router);
-app.use(express.static('public'));
 
 // ==== MONGOOSE DB CONFIG ====
 
@@ -25,6 +21,41 @@ mongoose.connect("mongodb://localhost:27017/foodie", {
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error: '));
 
+// === SESSIONS FOR TRACKING LOGINS ===
+
+app.use(session({
+  secret: config.sessionsSecret,
+  resave: true,
+  saveUninitialized: false,
+  store: new mongoStore({
+    mongooseConnection: db
+  })
+}));
+
+// make user ID available in templates
+app.use(function(req, res, next) {
+  res.locals.currentUser = req.session.userID;
+  next();
+});
+
+// parse incoming requests
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
+
+
+// === SET VIEW ENGINE TO PUG & SET PUBLIC DIR
+app.set('view engine', 'pug');
+app.set('views');
+app.use(express.static('public'));
+
+//  === INCLUDE ROUTES
+
+app.use(router);
+
+// === ERROR HANDLING ===
+
 // any request that makes it this far will run this function:
 app.use((req, res, next) => {
   const err = new Error('Page not found.');
@@ -33,7 +64,7 @@ app.use((req, res, next) => {
 });
 
 // error handling:
-app.use((err, req, res, next) =>{
+app.use((err, req, res, next) => {
   res.locals.error = err;
   res.status(err.status);
   res.render('template', {

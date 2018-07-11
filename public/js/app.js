@@ -1,6 +1,5 @@
 // THIS IS THE FRONT END APP.JS FILE.
 $(function() {
-
   $('body').on('click', '.get-recipe-button', function() {
     let recipeid = $(this).attr('id');
     $.get(`/?recipe=${recipeid}`, function(data) {

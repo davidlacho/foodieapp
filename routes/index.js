@@ -23,45 +23,59 @@ function renderRecipes(res, data) {
 
 // ===== HANDLE ROUTES =====
 
+// Get Register route:
+
 router.get('/register', (req, res, next) => {
   res.render('register');
 });
 
+// Post Register route:
+
 router.post('/register', function(req, res, next) {
+
   if (req.body.email &&
     req.body.name &&
     req.body.password &&
     req.body.confirmPassword) {
-
-    if (req.body.password !== req.body.confirmPassword) {
-      const err = new Error('Passwords do not match');
-      err.status = 400;
-      return next(err);
-    } else {
-      const userData = {
-        email: req.body.email,
-        name: req.body.name,
-        password: req.body.password
-      };
-
-      //use schema's create method to insert our document into mongo:
-      User.create(userData, function(error, user) {
-        if (error) {
-          return next(error);
+      User.find({
+        name: req.body.name
+      }, function(err, docs) {
+        // If user does not exist:
+        if (docs.length === 0) {
+          if (req.body.password !== req.body.confirmPassword) {
+            const err = new Error('Passwords do not match');
+            err.status = 400;
+            return next(err);
+          } else {
+            const userData = {
+              email: req.body.email,
+              name: req.body.name,
+              password: req.body.password
+            };
+            //use schema's create method to insert our document into mongo:
+            User.create(userData, function(error, user) {
+              if (error) {
+                return next(error);
+              } else {
+                req.session.userID = user._id;
+                return res.redirect('/');
+              }
+            });
+          }
         } else {
-          return res.redirect('/');
+          const error = new Error("User already exists.");
+          error.status = 409;
+          next(error);
         }
       });
-
-    }
   } else {
     const err = new Error('All fields required.');
     err.status = 400;
     return next(err);
   }
-  console.log('received post');
 });
 
+// Get Homepage & Handle Query Strings
 
 router.get('/', (req, res, next) => {
 
