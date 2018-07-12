@@ -63,11 +63,22 @@ app.use((req, res, next) => {
   next(err);
 });
 
+app.use((err, req, res, next) => {
+  if (err.status == 403) {
+    res.render('login', {
+      message: `${err.status} ${err}`,
+      backButtonOff: true
+    });
+  } else {
+    next();
+  }
+});
+
 // error handling:
 app.use((err, req, res, next) => {
   res.locals.error = err;
   res.status(err.status);
   res.render('template', {
-    message: `${err.status} ${err}`
+    message: `${err.status} ${err}`,
   });
 });

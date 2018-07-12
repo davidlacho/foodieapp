@@ -17,6 +17,15 @@ $(function() {
   $('body').on('click', '.close-modal-button', function() {
     $(".modal-title").html("");
     $(".modal-body").html("");
+  });
+
+  $('body').on('click', '.favorite-recipe-button', function() {
+    let recipeid = $(this).attr('id');
+    $.post(`/favrecipe/?recipe=${recipeid}`);
+    $(this).attr("disabled", "disabled");
   })
+
+
+
 });
 // End .ready();

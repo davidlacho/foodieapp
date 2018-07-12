@@ -4,7 +4,7 @@ const searchResults = require('../models/searchSchema.js');
 const recipeResults = require('../models/recipeSchema.js')
 const fetchData = require('../js/fetchData.js');
 const User = require('../models/userSchema.js');
-
+const mid = require('../middleware');
 
 // ==== GET API KEYS FROM CONFIG.JS FILE TO USE FOR SEARCH =====
 
@@ -23,51 +23,92 @@ function renderRecipes(res, data) {
 
 // ===== HANDLE ROUTES =====
 
-// Get Register route:
+// Get login route:
+router.get('/login', mid.loggedOut, (req, res, next) => {
+  res.render('login');
+});
 
-router.get('/register', (req, res, next) => {
+
+// POST /login
+router.post('/login', function(req, res, next) {
+  if (req.body.email && req.body.password) {
+    User.authenticate(req.body.email, req.body.password, function(error, user) {
+      if (error || !user) {
+        if (error) {
+          return next(error);
+        } else {
+          const err = new Error("Wrong email or password");
+          err.status = 401;
+          return next(err);
+        }
+      } else {
+        // Create a session if user is authenticated
+        req.session.userID = user._id;
+        return res.redirect('/profile');
+      }
+    });
+  } else {
+    const err = new Error('Email and password are required.');
+    err.status = 401;
+    next(err);
+  }
+});
+
+//GET /logout
+router.get('/logout', function(req, res, next) {
+  if (req.session) {
+    req.session.destroy(function(err) {
+      if (err) {
+        return next(err);
+      } else {
+        return res.redirect('/');
+      }
+    })
+  }
+});
+
+// Get Register route:
+router.get('/register', mid.loggedOut, (req, res, next) => {
   res.render('register');
 });
 
 // Post Register route:
-
 router.post('/register', function(req, res, next) {
-
   if (req.body.email &&
     req.body.name &&
     req.body.password &&
     req.body.confirmPassword) {
-      User.find({
-        name: req.body.name
-      }, function(err, docs) {
-        // If user does not exist:
-        if (docs.length === 0) {
-          if (req.body.password !== req.body.confirmPassword) {
-            const err = new Error('Passwords do not match');
-            err.status = 400;
-            return next(err);
-          } else {
-            const userData = {
-              email: req.body.email,
-              name: req.body.name,
-              password: req.body.password
-            };
-            //use schema's create method to insert our document into mongo:
-            User.create(userData, function(error, user) {
-              if (error) {
-                return next(error);
-              } else {
-                req.session.userID = user._id;
-                return res.redirect('/');
-              }
-            });
-          }
+    User.find({
+      name: req.body.email
+    }, function(err, docs) {
+      // If user does not exist:
+      if (docs.length === 0) {
+        if (req.body.password !== req.body.confirmPassword) {
+          const err = new Error('Passwords do not match');
+          err.status = 400;
+          return next(err);
         } else {
-          const error = new Error("User already exists.");
-          error.status = 409;
-          next(error);
+          const userData = {
+            email: req.body.email,
+            name: req.body.name,
+            password: req.body.password
+          };
+          //use schema's create method to insert our document into mongo:
+          User.create(userData, function(error, user) {
+            if (error) {
+              return next(error);
+            } else {
+              req.session.userID = user._id;
+              return res.redirect('/');
+            }
+          });
         }
-      });
+      } else {
+        const error = new Error("User already exists.");
+        error.status = 409;
+        next(error);
+      }
+    });
   } else {
     const err = new Error('All fields required.');
     err.status = 400;
@@ -76,7 +117,6 @@ router.post('/register', function(req, res, next) {
 });
 
 // Get Homepage & Handle Query Strings
-
 router.get('/', (req, res, next) => {
 
   // Query Strings:
@@ -163,7 +203,85 @@ router.get('/', (req, res, next) => {
   } else {
     res.render('searchapp');
   }
-
 }); // END .get('/')
+
+// Get profile page
+router.get('/profile', mid.requiresLogin, function(req, res, next) {
+  User.findById(res.locals.currentUser)
+    .exec(function(err, user) {
+      if (err) {
+        return next(err);
+      } else {
+        return res.render('profile', {
+          name: user.name,
+        });
+      }
+    });
+});
+
+// Post favorite recipes
+router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
+  let {
+    recipe
+  } = req.query;
+
+  User.find({
+    _id: res.locals.currentUser
+  }, function(err, docs) {
+
+    if (err) {
+      return next(err);
+    }
+
+    // Check if the recipe already exist in this user's data?
+    const result = docs[0].favRecipes.find(obj => {
+      return obj.recipe === recipe
+    })
+
+    // If the recipe does not exist in this user's data:
+    if (!result) {
+      User.update({
+        _id: res.locals.currentUser
+      }, {
+        $push: {
+          favRecipes: {
+            recipe
+          }
+        }
+      }, function(err) {
+        if (err) {
+          return next(err);
+        }
+      });
+    }
+  });
+
+  // Check if query string searching for recipe.
+  if (recipe != undefined) {
+    recipe = recipe.toLowerCase(recipe);
+    recipeResults.find({
+      recipeID: recipe
+    }, function(err, docs) {
+      if (docs.length === 0) {
+        url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recipe}`;
+        fetchData(url)
+          .then((data) => {
+            const recipeSavedResults = {
+              recipeID: recipe,
+              results: data
+            };
+            recipeResults.create(recipeSavedResults);
+          })
+          .catch((err) => {
+            const error = new Error("Something went wrong on our end.");
+            error.status = 500;
+            console.error(`\nERROR OCCURED: ${err}`)
+            next(error);
+          });
+      }
+    }); //End recipeResults.find()
+  } //End if(recipe != undefined)
+}); //End router.post(/favrecipe)
+
 
 module.exports = router;
