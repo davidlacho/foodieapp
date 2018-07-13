@@ -56,13 +56,6 @@ app.use(router);
 
 // === ERROR HANDLING ===
 
-// any request that makes it this far will run this function:
-app.use((req, res, next) => {
-  const err = new Error('Page not found.');
-  err.status = 404;
-  next(err);
-});
-
 app.use((err, req, res, next) => {
   if (err.status == 403) {
     res.render('login', {
@@ -72,6 +65,13 @@ app.use((err, req, res, next) => {
   } else {
     next();
   }
+});
+
+// any request that makes it this far will run this function:
+app.use((req, res, next) => {
+  const err = new Error('Page not found.');
+  err.status = 404;
+  next(err);
 });
 
 // error handling:

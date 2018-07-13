@@ -11,13 +11,46 @@ const mid = require('../middleware');
 const config = require('../js/config.js');
 const food2forkApiKey = config.food2forkApiKey;
 
+
+// ===== HELPER FUNCTIONS:
+
 function renderRecipes(res, data) {
   if (data.recipes.length === 0) {
     res.render('searchapp', {
-      message: "nothing found!"
+      message: "nothing found!",
+      backButtonOff: true
     });
   } else {
-    res.render('searchapp', data);
+    // Check if the user has favorited the recipe:
+    let usersFaved = [];
+    if (res.locals.currentUser) {
+      User.find({
+        _id: res.locals.currentUser
+      }, function(err, docs) {
+        if (err) {
+          next(err);
+        } else {
+          docs[0].favRecipes.forEach((favedRecipes) => {
+            usersFaved.push(favedRecipes.recipe);
+          });
+        }
+        data.recipes.forEach((recipe) => {
+          recipe.favOption = true;
+          if (usersFaved.includes(recipe.recipe_id)) {
+            recipe.isFavorited = true;
+          } else {
+            recipe.isFavorited = false;
+          }
+        });
+        res.render('searchapp', data);
+      });
+    } else {
+      // If there is no user logged in, render search data
+      data.recipes.forEach((recipe) => {
+        recipe.favOption = false;
+      });
+      res.render('searchapp', data);
+    }
   }
 }
 
@@ -235,7 +268,7 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
 
     // Check if the recipe already exist in this user's data?
     const result = docs[0].favRecipes.find(obj => {
-      return obj.recipe === recipe
+      return obj.recipe === recipe;
     })
 
     // If the recipe does not exist in this user's data:

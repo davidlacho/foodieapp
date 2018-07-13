@@ -21,8 +21,11 @@ $(function() {
 
   $('body').on('click', '.favorite-recipe-button', function() {
     let recipeid = $(this).attr('id');
+    $(this).parent().addClass('active');
     $.post(`/favrecipe/?recipe=${recipeid}`);
-    $(this).attr("disabled", "disabled");
+    // Should wrap this in a callback function to only execute when successful?
+    $(this).attr("aria-pressed", "true");
+    $(this).html("Recipe Favorited");
   })
 
 

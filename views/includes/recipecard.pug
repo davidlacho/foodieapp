@@ -9,6 +9,10 @@ block content
           | This is ranked #{recipe.social_rank} out of 100.
         button.btn.btn-primary.get-recipe-button(type="button", data-toggle="modal", data-target="#recipeModal" id=`${recipe.recipe_id}`)
           | Get Recipe
-        button.btn.btn-primary.favorite-recipe-button(type="button", id=`${recipe.recipe_id}`)
-          | Favorite Recipe
-        
+        if recipe.favOption 
+          if recipe.isFavorited
+            button.ml-2.btn.btn-warning.favorite-recipe-button.active(type="button", id=`${recipe.recipe_id}` data-toggle="button", aria-pressed="true", autocomplete="off")
+              | Recipe Favorited
+          else
+            button.ml-2.btn.btn-warning.favorite-recipe-button(type="button", id=`${recipe.recipe_id}` data-toggle="button", aria-pressed="false", autocomplete="off")
+              | Favorite Recipe
