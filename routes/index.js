@@ -239,36 +239,38 @@ router.get('/', (req, res, next) => {
 
 // Get profile page
 router.get('/profile', mid.requiresLogin, function(req, res, next) {
+
+  function matchRecipes(recipeID) {
+    recipeResults.find({
+      recipe: recipeID.toString
+    }, function(err, docs) {
+      if (err) {
+        next(err);
+      } else {
+        return docs[0].results;
+      }
+    });
+  }
+
+  let UserRecipesIDs = [];
+  let UserRecipeData = [];
+
   User.findById(res.locals.currentUser)
     .exec(function(err, user) {
       if (err) {
         return next(err);
       } else {
-        // 1) You need to get all the recipe IDs that the user has favourited
-        let UserRecipes = [];
-        let UserRecipesIDs = [];
         user.favRecipes.forEach((favedRecipes) => {
           UserRecipesIDs.push(favedRecipes.recipe);
         });
-        // 2) You then have to query the results database for matching ids
-        UserRecipesIDs.forEach((recipeIdentifer) => {
-          recipeResults.find({
-            recipeID: recipeIdentifer
-          }, function(err, docs) {
-            if (err) {
-              next(err);
-            } else {
-              UserRecipes.push(docs[0].results.recipe);
-            }
-          });
-        });
 
-        // I'm having an issue with scope here. Probably needs to be constructed with a closure.
-        // UserRecipes is returning as []. at this level of scope. It should be an array of recipe items.
+        for (var i = 0; i < UserRecipesIDs.length; i++) {
+          UserRecipeData.push(matchRecipes(UserRecipesIDs[i]));
+        }
 
         return res.render('profile', {
           name: user.name,
-          recipes: UserRecipes
+          recipes: []
         });
       }
     });
