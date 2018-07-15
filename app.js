@@ -56,16 +56,6 @@ app.use(router);
 
 // === ERROR HANDLING ===
 
-app.use((err, req, res, next) => {
-  if (err.status == 403) {
-    res.render('login', {
-      message: `${err.status} ${err}`,
-      backButtonOff: true
-    });
-  } else {
-    next();
-  }
-});
 
 // any request that makes it this far will run this function:
 app.use((req, res, next) => {
@@ -78,7 +68,15 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   res.locals.error = err;
   res.status(err.status);
-  res.render('template', {
-    message: `${err.status} ${err}`,
-  });
+  if (err.status == 409) {
+    res.render('login.pug', {
+      message: err.message,
+      backButtonOff: true
+    });
+  } else {
+    res.render('searchapp', {
+      message: `${err.status} ${err}`,
+    });
+  }
+
 });

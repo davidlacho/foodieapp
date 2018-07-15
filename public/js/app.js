@@ -20,15 +20,32 @@ $(function() {
   });
 
   $('body').on('click', '.favorite-recipe-button', function() {
+    let buttonElement = $(this);
     let recipeid = $(this).attr('id');
-    $(this).parent().addClass('active');
-    $.post(`/favrecipe/?recipe=${recipeid}`);
-    // Should wrap this in a callback function to only execute when successful?
-    $(this).attr("aria-pressed", "true");
-    $(this).html("Recipe Favorited");
-  })
 
+    function unFavouriteRecipe(buttonElement) {
+      $(buttonElement).removeClass('recipeButtonFavorited');
+      $(buttonElement).removeClass('btn-warning');
+      $(buttonElement).addClass('btn-light');
+    }
 
+    function favoriteRecipe(buttonElement) {
+      $(buttonElement).removeClass('recipeButtonFavorited');
+      $(buttonElement).addClass('recipeButtonFavorited');
+      $(buttonElement).removeClass('btn-light');
+      $(buttonElement).addClass('btn-warning');
+    }
+
+    if ($(this).hasClass('recipeButtonFavorited')) {
+      $.post(`/favrecipe/?recipe=${recipeid}`, function() {
+        unFavouriteRecipe(buttonElement);
+      });
+    } else {
+      $.post(`/favrecipe/?recipe=${recipeid}`, function() {
+        favoriteRecipe(buttonElement);
+      });
+    }
+  });
 
 });
 // End .ready();

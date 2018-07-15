@@ -6,15 +6,14 @@ nav.navbar.navbar-expand-lg.navbar-light.bg-light.sticky-top
   |   
   #navbarSupportedContent.collapse.navbar-collapse
     ul.navbar-nav.mr-auto
-      li.nav-item.active
-        a.nav-link(href="/profile")
-          | Profile
-          span.sr-only (current)
-      |       
-      li.nav-item
-        a.nav-link(href="/register") Create An Account
-      |       
-      li.nav-item
+      if currentUser
+        li.nav-item
+          a.nav-link(href="/profile")
+            | Profile
+            span.sr-only (current)
+      else
+        |       
+        li.nav-item
         a.nav-link(href="/login") Login
     |     
     form.form-inline.my-2.my-lg-0(action='/', method="GET")

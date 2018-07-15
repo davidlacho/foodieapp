@@ -112,9 +112,8 @@ router.post('/register', function(req, res, next) {
     req.body.password &&
     req.body.confirmPassword) {
     User.find({
-      name: req.body.email
+      email: req.body.email
     }, function(err, docs) {
-      // If user does not exist:
       if (docs.length === 0) {
         if (req.body.password !== req.body.confirmPassword) {
           const err = new Error('Passwords do not match');
@@ -137,9 +136,9 @@ router.post('/register', function(req, res, next) {
           });
         }
       } else {
-        const error = new Error("User already exists.");
-        error.status = 409;
-        next(error);
+        const err = new Error("User already exists. Do you mean to login?");
+        err.status = 409;
+        next(err);
       }
     });
   } else {
@@ -245,8 +244,31 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
       if (err) {
         return next(err);
       } else {
+        // 1) You need to get all the recipe IDs that the user has favourited
+        let UserRecipes = [];
+        let UserRecipesIDs = [];
+        user.favRecipes.forEach((favedRecipes) => {
+          UserRecipesIDs.push(favedRecipes.recipe);
+        });
+        // 2) You then have to query the results database for matching ids
+        UserRecipesIDs.forEach((recipeIdentifer) => {
+          recipeResults.find({
+            recipeID: recipeIdentifer
+          }, function(err, docs) {
+            if (err) {
+              next(err);
+            } else {
+              UserRecipes.push(docs[0].results.recipe);
+            }
+          });
+        });
+
+        // I'm having an issue with scope here. Probably needs to be constructed with a closure.
+        // UserRecipes is returning as []. at this level of scope. It should be an array of recipe items.
+
         return res.render('profile', {
           name: user.name,
+          recipes: UserRecipes
         });
       }
     });
@@ -266,10 +288,9 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
       return next(err);
     }
 
-    // Check if the recipe already exist in this user's data?
     const result = docs[0].favRecipes.find(obj => {
       return obj.recipe === recipe;
-    })
+    });
 
     // If the recipe does not exist in this user's data:
     if (!result) {
@@ -285,8 +306,27 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
         if (err) {
           return next(err);
         }
+        res.sendStatus(200);
+      });
+    } else {
+      // If the recipe DOES exist in the user's data, remove it.
+      User.update({
+        _id: res.locals.currentUser
+      }, {
+        $pull: {
+          favRecipes: {
+            recipe
+          }
+        }
+      }, function(err) {
+        if (err) {
+          return next(err);
+        }
+        res.sendStatus(200);
+
       });
     }
+
   });
 
   // Check if query string searching for recipe.

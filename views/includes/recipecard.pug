@@ -11,8 +11,8 @@ block content
           | Get Recipe
         if recipe.favOption 
           if recipe.isFavorited
-            button.ml-2.btn.btn-warning.favorite-recipe-button.active(type="button", id=`${recipe.recipe_id}` data-toggle="button", aria-pressed="true", autocomplete="off")
-              | Recipe Favorited
+            button.ml-2.btn.btn-warning.favorite-recipe-button.recipeButtonFavorited(type="button", id=`${recipe.recipe_id}`, autocomplete="off")
+              | 💛
           else
-            button.ml-2.btn.btn-warning.favorite-recipe-button(type="button", id=`${recipe.recipe_id}` data-toggle="button", aria-pressed="false", autocomplete="off")
-              | Favorite Recipe
+            button.ml-2.btn.btn-light.favorite-recipe-button(type="button", id=`${recipe.recipe_id}`, autocomplete="off")
+              | 💛

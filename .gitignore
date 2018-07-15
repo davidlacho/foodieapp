@@ -3,3 +3,4 @@ js/config.js
 /node_modules/node-fetch
 /UnusedCode
 .DS_Store
+/public/offline/*
