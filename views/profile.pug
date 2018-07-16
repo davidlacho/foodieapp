@@ -3,6 +3,9 @@ extends template.pug
 block content
   p Hello, #{name}!
   |
-  .row
-    each recipe in recipes
-      include includes/recipecard
+  if recipes
+    .row
+      each recipe in recipes
+        include includes/recipecard
+  else 
+    p You haven't favourited any recipes yet!

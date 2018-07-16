@@ -61,7 +61,6 @@ router.get('/login', mid.loggedOut, (req, res, next) => {
   res.render('login');
 });
 
-
 // POST /login
 router.post('/login', function(req, res, next) {
   if (req.body.email && req.body.password) {
@@ -240,40 +239,43 @@ router.get('/', (req, res, next) => {
 // Get profile page
 router.get('/profile', mid.requiresLogin, function(req, res, next) {
 
-  function matchRecipes(recipeID) {
-    recipeResults.find({
-      recipe: recipeID.toString
-    }, function(err, docs) {
-      if (err) {
-        next(err);
-      } else {
-        return docs[0].results;
-      }
-    });
-  }
-
   let UserRecipesIDs = [];
-  let UserRecipeData = [];
-
   User.findById(res.locals.currentUser)
     .exec(function(err, user) {
       if (err) {
         return next(err);
       } else {
-        user.favRecipes.forEach((favedRecipes) => {
-          UserRecipesIDs.push(favedRecipes.recipe);
-        });
-
-        for (var i = 0; i < UserRecipesIDs.length; i++) {
-          UserRecipeData.push(matchRecipes(UserRecipesIDs[i]));
+        if (user.favRecipes) {
+          user.favRecipes.forEach((favedRecipes) => {
+            UserRecipesIDs.push(favedRecipes.recipe);
+          });
+          let newArray = [];
+          UserRecipesIDs.forEach((arrayElement) => {
+            recipeResults.find({
+              recipeID: arrayElement
+            }, function(err, recResults) {
+              if (err) {
+                next(err);
+              } else {
+                newArray.push(recResults[0].results.recipe);
+              }
+              if (newArray.length === UserRecipesIDs.length) {
+                return res.render('profile', {
+                  name: user.name,
+                  recipes: newArray
+                });
+              }
+            });
+          });
+        } else {
+          return res.render('profile', {
+            name: user.name,
+          });
         }
-
-        return res.render('profile', {
-          name: user.name,
-          recipes: []
-        });
       }
+
     });
+
 });
 
 // Post favorite recipes
@@ -345,7 +347,36 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
               recipeID: recipe,
               results: data
             };
+            recipeSavedResults.results.recipe.social_rank = Math.round(recipeSavedResults.results.recipe.social_rank);
             recipeResults.create(recipeSavedResults);
+
+            let ingredientToCheck = recipeSavedResults.results.recipe.title;
+            ingredientToCheck = ingredientToCheck.toLowerCase(ingredientToCheck);
+
+            searchResults.find({
+              ingredientName: ingredientToCheck
+            }, function(err, docs) {
+              if (err) {
+                return next(err)
+              } else {
+                if (docs.length === 0) {
+                  let recipes = [];
+                  const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredientToCheck}`;
+                  fetchData(url)
+                    .then((data) => {
+                      recipes = data;
+                      recipes.recipes.forEach((recipe) => {
+                        recipe.social_rank = Math.round(recipe.social_rank);
+                      });
+                      const savedResults = {
+                        ingredientName: ingredientToCheck,
+                        results: recipes
+                      };
+                      searchResults.create(savedResults);
+                    })
+                }
+              }
+            });
           })
           .catch((err) => {
             const error = new Error("Something went wrong on our end.");
@@ -357,6 +388,5 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
     }); //End recipeResults.find()
   } //End if(recipe != undefined)
 }); //End router.post(/favrecipe)
-
 
 module.exports = router;

@@ -10,7 +10,7 @@ function loggedOut(req, res, next) {
 }
 
 function requiresLogin(req, res, next) {
-  if (req.session) {
+  if (req.session && req.session.userID) {
     return next();
   } else {
     const err = new Error ("You are required to login to view the page.");
