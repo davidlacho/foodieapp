@@ -11,8 +11,7 @@ const mid = require('../middleware');
 const config = require('../js/config.js');
 const food2forkApiKey = config.food2forkApiKey;
 
-
-// ===== HELPER FUNCTIONS:
+// ===== FUNCTIONS:
 
 function renderRecipes(res, data) {
   if (data.recipes.length === 0) {
@@ -54,6 +53,21 @@ function renderRecipes(res, data) {
   }
 }
 
+function removeCharacterCode(stringToRemoveCharCode) {
+  let in1 = stringToRemoveCharCode.indexOf("&#");
+  let in2 = stringToRemoveCharCode.indexOf(";");
+  let convertedCharCodeString = stringToRemoveCharCode.substring(in1 + 2, in2);
+  let charCode = Number(convertedCharCodeString);
+  let convertedChar = String.fromCharCode(charCode);
+  let replace = ("&#" + convertedCharCodeString + ";");
+  newString = stringToRemoveCharCode.replace(replace, convertedChar);
+  if (newString.includes("&#")) {
+    removeCharacterCode(newString)
+  } else {
+    return newString
+  }
+}
+
 // ===== HANDLE ROUTES =====
 
 // Get login route:
@@ -76,7 +90,7 @@ router.post('/login', function(req, res, next) {
       } else {
         // Create a session if user is authenticated
         req.session.userID = user._id;
-        return res.redirect('/profile');
+        return res.redirect('/');
       }
     });
   } else {
@@ -174,6 +188,9 @@ router.get('/', (req, res, next) => {
               recipeID: recipe,
               results: data
             };
+            recipeSavedResults.results.recipe.social_rank = Math.round(recipeSavedResults.results.recipe.social_rank);
+            removeCharacterCode(recipeSavedResults.results.recipe.title);
+            recipeSavedResults.results.recipe.title = newString;
             recipeResults.create(recipeSavedResults);
             res.send(data);
           })
@@ -207,8 +224,12 @@ router.get('/', (req, res, next) => {
             .then((data) => {
               recipes = data;
               recipes.recipes.forEach((recipe) => {
+                removeCharacterCode(recipe.title);
+                recipe.title = newString;
                 recipe.social_rank = Math.round(recipe.social_rank);
               });
+
+
               const savedResults = {
                 ingredientName: ingredient,
                 results: recipes
@@ -245,7 +266,10 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
       if (err) {
         return next(err);
       } else {
-        if (user.favRecipes) {
+        if (!user.favRecipes) {
+          user.favRecipes = [];
+        }
+        if (user.favRecipes.length > 0) {
           user.favRecipes.forEach((favedRecipes) => {
             UserRecipesIDs.push(favedRecipes.recipe);
           });
@@ -260,6 +284,11 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
                 newArray.push(recResults[0].results.recipe);
               }
               if (newArray.length === UserRecipesIDs.length) {
+
+                newArray.forEach((recipe) => {
+                  recipe.favOption = true;
+                  recipe.isFavorited = true;
+                });
                 return res.render('profile', {
                   name: user.name,
                   recipes: newArray
@@ -273,9 +302,7 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
           });
         }
       }
-
     });
-
 });
 
 // Post favorite recipes
@@ -348,6 +375,8 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
               results: data
             };
             recipeSavedResults.results.recipe.social_rank = Math.round(recipeSavedResults.results.recipe.social_rank);
+            removeCharacterCode(recipeSavedResults.results.recipe.title);
+            recipeSavedResults.results.recipe.title = newString;
             recipeResults.create(recipeSavedResults);
 
             let ingredientToCheck = recipeSavedResults.results.recipe.title;
@@ -366,6 +395,8 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
                     .then((data) => {
                       recipes = data;
                       recipes.recipes.forEach((recipe) => {
+                        removeCharacterCode(recipe.title);
+                        recipe.title = newString;
                         recipe.social_rank = Math.round(recipe.social_rank);
                       });
                       const savedResults = {

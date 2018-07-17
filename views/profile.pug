@@ -1,11 +1,13 @@
 extends template.pug
 
 block content
-  p Hello, #{name}!
+  p.mt-4 Hello, #{name}! Here are your favorited recipes:
   |
   if recipes
+    include includes/recipemodal
     .row
       each recipe in recipes
         include includes/recipecard
   else 
-    p You haven't favourited any recipes yet!
+    p You haven't favourited any recipes yet! Why not 
+      a(href="/") search for some?

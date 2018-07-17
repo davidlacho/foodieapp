@@ -1,6 +1,8 @@
 // THIS IS THE FRONT END APP.JS FILE.
 $(function() {
   $('body').on('click', '.get-recipe-button', function() {
+    $(".modal-title").html('<h2>Loading...</h2>');
+    $(".modal-body").html('...');
     let recipeid = $(this).attr('id');
     $.get(`/?recipe=${recipeid}`, function(data) {
       let ingredients = data.recipe.ingredients;
