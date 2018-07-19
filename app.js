@@ -6,6 +6,9 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const mongoStore = require('connect-mongo')(session);
 const config = require('./js/config.js');
+const logger = require('morgan')
+
+app.use(logger('dev'));
 
 
 const port = 3000;
@@ -27,6 +30,7 @@ app.use(session({
   secret: config.sessionsSecret,
   resave: true,
   saveUninitialized: false,
+  expires: new Date(Date.now() + (1)),
   store: new mongoStore({
     mongooseConnection: db
   })

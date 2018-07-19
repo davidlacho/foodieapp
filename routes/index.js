@@ -266,6 +266,7 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
       if (err) {
         return next(err);
       } else {
+
         if (!user.favRecipes) {
           user.favRecipes = [];
         }
@@ -273,7 +274,7 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
           user.favRecipes.forEach((favedRecipes) => {
             UserRecipesIDs.push(favedRecipes.recipe);
           });
-          let newArray = [];
+          let userRecipesToDisplay = [];
           UserRecipesIDs.forEach((arrayElement) => {
             recipeResults.find({
               recipeID: arrayElement
@@ -281,17 +282,43 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
               if (err) {
                 next(err);
               } else {
-                newArray.push(recResults[0].results.recipe);
-              }
-              if (newArray.length === UserRecipesIDs.length) {
+                if(recResults[0] === undefined){
 
-                newArray.forEach((recipe) => {
+                  // THIS SHOULD ATTEMPT A FETCH!!!
+
+                  console.log('missing recipe: ' + arrayElement);
+
+
+                  userRecipesToDisplay.push(
+
+
+
+                    { publisher: 'Cookin Canuck',
+                      f2f_url: 'http://food2fork.com/view/ed141a',
+                      ingredients:
+                       [ 'Something went wrong!'],
+                      recipe_id: arrayElement,
+                      image_url:
+                       'http://static.food2fork.com/ButternutQuinoaStewSquareSmallbe3b.jpg',
+                      social_rank: 0,
+                      title: 'Whoops! Something went wrong' }
+                  );
+
+
+
+                } else {
+                  console.log(recResults[0].results.recipe);
+                userRecipesToDisplay.push(recResults[0].results.recipe);
+              }
+              }
+              if (userRecipesToDisplay.length === UserRecipesIDs.length) {
+                userRecipesToDisplay.forEach((recipe) => {
                   recipe.favOption = true;
                   recipe.isFavorited = true;
                 });
                 return res.render('profile', {
                   name: user.name,
-                  recipes: newArray
+                  recipes: userRecipesToDisplay
                 });
               }
             });
