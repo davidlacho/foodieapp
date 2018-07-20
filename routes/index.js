@@ -12,6 +12,34 @@ const config = require('../js/config.js');
 const food2forkApiKey = config.food2forkApiKey;
 
 // ===== FUNCTIONS:
+function addNewRecipe(recID) {
+
+  const addRecipePromise = new Promise((resolve, reject) => {
+    url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recID}`;
+
+
+    fetchData(url)
+      .then((data) => {
+        const recipeSavedResults = {
+          recipeID: recID,
+          results: data
+        };
+        recipeSavedResults.results.recipe.social_rank = Math.round(recipeSavedResults.results.recipe.social_rank);
+        removeCharacterCode(recipeSavedResults.results.recipe.title);
+        recipeSavedResults.results.recipe.title = newString;
+        recipeResults.create(recipeSavedResults);
+        resolve(recipeSavedResults);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+
+
+
+  })
+
+  return addRecipePromise;
+}
 
 function renderRecipes(res, data) {
   if (data.recipes.length === 0) {
@@ -34,6 +62,7 @@ function renderRecipes(res, data) {
           });
         }
         data.recipes.forEach((recipe) => {
+          recipe.title = removeCharacterCode(recipe.title);
           recipe.favOption = true;
           if (usersFaved.includes(recipe.recipe_id)) {
             recipe.isFavorited = true;
@@ -54,6 +83,9 @@ function renderRecipes(res, data) {
 }
 
 function removeCharacterCode(stringToRemoveCharCode) {
+  if (stringToRemoveCharCode.includes("&amp;")) {
+    stringToRemoveCharCode = stringToRemoveCharCode.replace('&amp;', '&');
+  }
   let in1 = stringToRemoveCharCode.indexOf("&#");
   let in2 = stringToRemoveCharCode.indexOf(";");
   let convertedCharCodeString = stringToRemoveCharCode.substring(in1 + 2, in2);
@@ -61,11 +93,28 @@ function removeCharacterCode(stringToRemoveCharCode) {
   let convertedChar = String.fromCharCode(charCode);
   let replace = ("&#" + convertedCharCodeString + ";");
   newString = stringToRemoveCharCode.replace(replace, convertedChar);
-  if (newString.includes("&#")) {
+  if (newString.includes("&#" || "&amp;")) {
     removeCharacterCode(newString)
   } else {
     return newString
   }
+}
+
+function sloppyCardError() {
+  const sloppyCard = [{
+    results: {
+      recipe: {
+        publisher: '',
+        f2f_url: '',
+        ingredients: ['Something went wrong!'],
+        recipe_id: 000000,
+        image_url: 'http://static.food2fork.com/ButternutQuinoaStewSquareSmallbe3b.jpg',
+        social_rank: 0,
+        title: 'Whoops! Something went wrong'
+      }
+    }
+  }];
+  return sloppyCard;
 }
 
 // ===== HANDLE ROUTES =====
@@ -181,26 +230,19 @@ router.get('/', (req, res, next) => {
     }, function(err, docs) {
       // if recipe results do not exists in the db, create entry in db and send data.
       if (docs.length === 0) {
-        url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recipe}`;
-        fetchData(url)
+        addNewRecipe(recipe)
           .then((data) => {
-            const recipeSavedResults = {
-              recipeID: recipe,
-              results: data
-            };
-            recipeSavedResults.results.recipe.social_rank = Math.round(recipeSavedResults.results.recipe.social_rank);
-            removeCharacterCode(recipeSavedResults.results.recipe.title);
-            recipeSavedResults.results.recipe.title = newString;
-            recipeResults.create(recipeSavedResults);
-            res.send(data);
+            res.send(data.results);
           })
           .catch((err) => {
             const error = new Error("Something went wrong on our end.");
             error.status = 500;
-            // Print a more detailed error to the server console:
-            console.error(`\nERROR OCCURED: ${err}`)
-            // Push this error to be handled in app.js
-            next(error);
+            res.send({
+              error: {
+                status: error.status,
+                message: error.message
+              }
+            });
           });
       } else {
         // if recipe results exists in db, send data from db.
@@ -247,6 +289,7 @@ router.get('/', (req, res, next) => {
             });
         } else {
           // if ignredient results exists in db, send data from db.
+
           renderRecipes(res, docs[0].results);;
         }
       });
@@ -282,35 +325,27 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
               if (err) {
                 next(err);
               } else {
-                if(recResults[0] === undefined){
-
+                if (recResults[0] === undefined) {
                   // THIS SHOULD ATTEMPT A FETCH!!!
+                  addNewRecipe(arrayElement)
+                    .then((data) => {
+                      recResults[0] = data;
+                    })
+                    .catch((err) => {
+                      console.log(`\nSLOPPY ERROR HANDLING: User ${res.locals.currentUser} is accessing their profile page and I can't get favourited recipe ID ${arrayElement}. I'm going to send an error card using  sloppyCardError(). \n`);
+                    });
+                }
 
-                  console.log('missing recipe: ' + arrayElement);
+                if (recResults[0] === undefined) {
+                  // This is so sloppy and I hate it.
+                  recResults = sloppyCardError();
 
+                }
 
-                  userRecipesToDisplay.push(
-
-
-
-                    { publisher: 'Cookin Canuck',
-                      f2f_url: 'http://food2fork.com/view/ed141a',
-                      ingredients:
-                       [ 'Something went wrong!'],
-                      recipe_id: arrayElement,
-                      image_url:
-                       'http://static.food2fork.com/ButternutQuinoaStewSquareSmallbe3b.jpg',
-                      social_rank: 0,
-                      title: 'Whoops! Something went wrong' }
-                  );
-
-
-
-                } else {
-                  console.log(recResults[0].results.recipe);
+                recResults[0].results.recipe.title = removeCharacterCode(recResults[0].results.recipe.title);
                 userRecipesToDisplay.push(recResults[0].results.recipe);
               }
-              }
+
               if (userRecipesToDisplay.length === UserRecipesIDs.length) {
                 userRecipesToDisplay.forEach((recipe) => {
                   recipe.favOption = true;
@@ -394,19 +429,14 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
       recipeID: recipe
     }, function(err, docs) {
       if (docs.length === 0) {
-        url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recipe}`;
-        fetchData(url)
+        addNewRecipe(recipe)
           .then((data) => {
             const recipeSavedResults = {
               recipeID: recipe,
               results: data
             };
-            recipeSavedResults.results.recipe.social_rank = Math.round(recipeSavedResults.results.recipe.social_rank);
-            removeCharacterCode(recipeSavedResults.results.recipe.title);
-            recipeSavedResults.results.recipe.title = newString;
-            recipeResults.create(recipeSavedResults);
 
-            let ingredientToCheck = recipeSavedResults.results.recipe.title;
+            let ingredientToCheck = data.recipe.title;
             ingredientToCheck = ingredientToCheck.toLowerCase(ingredientToCheck);
 
             searchResults.find({
@@ -435,13 +465,10 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
                 }
               }
             });
-          })
-          .catch((err) => {
-            const error = new Error("Something went wrong on our end.");
-            error.status = 500;
-            console.error(`\nERROR OCCURED: ${err}`)
-            next(error);
+          }).catch((err) => {
+            console.log(err.message);
           });
+
       }
     }); //End recipeResults.find()
   } //End if(recipe != undefined)
