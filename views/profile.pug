@@ -1,7 +1,7 @@
 extends template.pug
 
 block content
-  p.mt-4 Hello, #{name}! Here are your favorited recipes:
+  p.mt-4 Hello, #{name}! Here are your liked recipes:
   |
   if recipes
     include includes/recipemodal
@@ -9,5 +9,5 @@ block content
       each recipe in recipes
         include includes/recipecard
   else 
-    p You haven't favourited any recipes yet! Why not 
+    p You haven't liked any recipes yet! Why not 
       a(href="/") search for some?

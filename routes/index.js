@@ -13,11 +13,8 @@ const food2forkApiKey = config.food2forkApiKey;
 
 // ===== FUNCTIONS:
 function addNewRecipe(recID) {
-
   const addRecipePromise = new Promise((resolve, reject) => {
     url = `http://food2fork.com/api/get?key=${food2forkApiKey}&rId=${recID}`;
-
-
     fetchData(url)
       .then((data) => {
         const recipeSavedResults = {
@@ -33,12 +30,34 @@ function addNewRecipe(recID) {
       .catch((err) => {
         reject(err);
       });
-
-
-
   })
-
   return addRecipePromise;
+}
+
+function addIngredientToDB(ingredient) {
+  addIngredientPromise = new Promise((resolve, reject) => {
+    let recipes = [];
+    const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredient}`;
+    fetchData(url)
+      .then((data) => {
+        recipes = data;
+        recipes.recipes.forEach((recipe) => {
+          removeCharacterCode(recipe.title);
+          recipe.title = newString;
+          recipe.social_rank = Math.round(recipe.social_rank);
+        });
+        const savedResults = {
+          ingredientName: ingredient,
+          results: recipes
+        };
+        searchResults.create(savedResults);
+        resolve(savedResults);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+  return addIngredientPromise;
 }
 
 function renderRecipes(res, data) {
@@ -235,14 +254,7 @@ router.get('/', (req, res, next) => {
             res.send(data.results);
           })
           .catch((err) => {
-            const error = new Error("Something went wrong on our end.");
-            error.status = 500;
-            res.send({
-              error: {
-                status: error.status,
-                message: error.message
-              }
-            });
+            return next(err);
           });
       } else {
         // if recipe results exists in db, send data from db.
@@ -260,36 +272,15 @@ router.get('/', (req, res, next) => {
       }, function(err, docs) {
         // if ingredient does not exist in db, create entry in db and send data.
         if (docs.length === 0) {
-          let recipes = [];
-          const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredient}`;
-          fetchData(url)
+          addIngredientToDB(ingredient)
             .then((data) => {
-              recipes = data;
-              recipes.recipes.forEach((recipe) => {
-                removeCharacterCode(recipe.title);
-                recipe.title = newString;
-                recipe.social_rank = Math.round(recipe.social_rank);
-              });
-
-
-              const savedResults = {
-                ingredientName: ingredient,
-                results: recipes
-              };
-              searchResults.create(savedResults);
-              renderRecipes(res, recipes);
+              renderRecipes(res, data.results);;
             })
             .catch((err) => {
-              const error = new Error("Whoops! Something went wrong on our end.");
-              error.status = 500;
-              // Print a more detailed error to the server console:
-              console.error(`\nERROR OCCURED: ${err}`)
-              // Push this error to be handled in app.js
-              next(error);
+              return next(err);
             });
         } else {
           // if ignredient results exists in db, send data from db.
-
           renderRecipes(res, docs[0].results);;
         }
       });
@@ -309,7 +300,6 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
       if (err) {
         return next(err);
       } else {
-
         if (!user.favRecipes) {
           user.favRecipes = [];
         }
@@ -335,17 +325,13 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
                       console.log(`\nSLOPPY ERROR HANDLING: User ${res.locals.currentUser} is accessing their profile page and I can't get favourited recipe ID ${arrayElement}. I'm going to send an error card using  sloppyCardError(). \n`);
                     });
                 }
-
                 if (recResults[0] === undefined) {
                   // This is so sloppy and I hate it.
                   recResults = sloppyCardError();
-
                 }
-
                 recResults[0].results.recipe.title = removeCharacterCode(recResults[0].results.recipe.title);
                 userRecipesToDisplay.push(recResults[0].results.recipe);
               }
-
               if (userRecipesToDisplay.length === UserRecipesIDs.length) {
                 userRecipesToDisplay.forEach((recipe) => {
                   recipe.favOption = true;
@@ -369,6 +355,7 @@ router.get('/profile', mid.requiresLogin, function(req, res, next) {
 
 // Post favorite recipes
 router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
+
   let {
     recipe
   } = req.query;
@@ -446,29 +433,16 @@ router.post('/favrecipe', mid.requiresLogin, function(req, res, next) {
                 return next(err)
               } else {
                 if (docs.length === 0) {
-                  let recipes = [];
-                  const url = `http://food2fork.com/api/search?key=${food2forkApiKey}&q=${ingredientToCheck}`;
-                  fetchData(url)
-                    .then((data) => {
-                      recipes = data;
-                      recipes.recipes.forEach((recipe) => {
-                        removeCharacterCode(recipe.title);
-                        recipe.title = newString;
-                        recipe.social_rank = Math.round(recipe.social_rank);
-                      });
-                      const savedResults = {
-                        ingredientName: ingredientToCheck,
-                        results: recipes
-                      };
-                      searchResults.create(savedResults);
+                  addIngredientToDB(ingredientToCheck)
+                    .catch((err) => {
+                      return next(err);
                     })
                 }
               }
             });
           }).catch((err) => {
-            console.log(err.message);
+            return next(err);
           });
-
       }
     }); //End recipeResults.find()
   } //End if(recipe != undefined)
