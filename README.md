@@ -1,7 +1,7 @@
 # Foodie App
 
 ## Description
-TinyApp is a full stack web application built with Node and Express that allows users to lookup recipes based on ingredients they have lying around. They can login and keep track of their favorite recipes.
+Foodie is a full stack web application built with Node and Express that allows users to lookup recipes based on ingredients they have lying around. They can login and keep track of their favorite recipes.
 
 ## Dependencies and Tech Stack
 * Express
